@@ -1,12 +1,24 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <!-- ═══════════════════════════════════════════════════════════
-       GTM DATA LAYER — must be first, before any other scripts
-  ═══════════════════════════════════════════════════════════ -->
-  <script>
-    window.dataLayer = window.dataLayer || [];
-  </script>
+  <!--
+  ╔══════════════════════════════════════════════════════════════════╗
+  ║   GTM AJAX FORM TRACKING DEMO                                   ║
+  ║   Replicates the Analytics Mania demo used in the YouTube       ║
+  ║   tutorial: https://youtu.be/t0boySFEol4                        ║
+  ║                                                                  ║
+  ║   dataLayer path for success message:                           ║
+  ║     attributes.response.data.message                            ║
+  ║                                                                  ║
+  ║   GTM Custom Event Trigger fires on:                            ║
+  ║     event = "ajaxComplete"                                      ║
+  ║     + dlv attributes.response.data.message                      ║
+  ║       contains "Thanks for contacting us!"                      ║
+  ╚══════════════════════════════════════════════════════════════════╝
+  -->
+
+  <!-- 1. dataLayer init — MUST be first -->
+  <script>window.dataLayer = window.dataLayer || [];</script>
 
   <!-- Google Tag Manager -->
 <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
@@ -18,266 +30,329 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Correspondence — Contact</title>
+  <title>Contact Us — GTM AJAX Demo</title>
 
-  <!-- Google Fonts: Playfair Display + Cormorant Garamond -->
+  <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,300;0,8..60,400;0,8..60,600;1,8..60,300;1,8..60,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
 
-  <!-- jQuery (MANDATORY — GTM jQuery AJAX listener depends on this) -->
+  <!-- 3. jQuery — MANDATORY for the AJAX listener -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
 
   <style>
-    /* ── RESET & BASE ──────────────────────────────────────── */
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
+    /* ── TOKENS ─────────────────────────────────────────────── */
     :root {
-      --ivory:        #fdfbf7;
-      --ivory-mid:    #f5f0e8;
-      --charcoal:     #1c1c1c;
-      --navy:         #1a2340;
-      --muted:        #7a7065;
-      --rule:         #d4cec4;
-      --gold:         #b09a72;
-      --gold-light:   #c8b08a;
-      --success-bg:   #f4f1eb;
-
-      --ff-display: 'Playfair Display', Georgia, serif;
-      --ff-body:    'Cormorant Garamond', 'Times New Roman', serif;
+      --bg:          #f7f5f0;
+      --surface:     #ffffff;
+      --border:      #e2ddd6;
+      --text:        #1a1a1a;
+      --muted:       #6b6560;
+      --accent:      #2d6a4f;
+      --accent-dark: #1b4332;
+      --accent-pale: #d8f3dc;
+      --error:       #c0392b;
+      --panel-bg:    #0f1117;
+      --panel-border:#2a2f3a;
+      --mono:        'Courier New', monospace;
     }
 
-    html, body {
-      height: 100%;
-      background-color: var(--ivory);
-      color: var(--charcoal);
-      font-family: var(--ff-body);
-      font-size: 18px;
-      line-height: 1.7;
-      -webkit-font-smoothing: antialiased;
-    }
-
-    /* ── PAGE LAYOUT ───────────────────────────────────────── */
-    .page-wrapper {
+    /* ── RESET ──────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 16px; }
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
       min-height: 100vh;
       display: flex;
       flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 60px 24px;
-      position: relative;
-      overflow: hidden;
+      -webkit-font-smoothing: antialiased;
     }
 
-    /* Subtle grain texture overlay */
-    .page-wrapper::before {
-      content: '';
-      position: fixed;
-      inset: 0;
-      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.035'/%3E%3C/svg%3E");
-      pointer-events: none;
-      z-index: 0;
-    }
-
-    /* Decorative corner ornaments */
-    .corner {
-      position: fixed;
-      width: 80px;
-      height: 80px;
-      opacity: 0.18;
-    }
-    .corner--tl { top: 28px; left: 28px; border-top: 1px solid var(--gold); border-left: 1px solid var(--gold); }
-    .corner--tr { top: 28px; right: 28px; border-top: 1px solid var(--gold); border-right: 1px solid var(--gold); }
-    .corner--bl { bottom: 28px; left: 28px; border-bottom: 1px solid var(--gold); border-left: 1px solid var(--gold); }
-    .corner--br { bottom: 28px; right: 28px; border-bottom: 1px solid var(--gold); border-right: 1px solid var(--gold); }
-
-    /* ── CARD ──────────────────────────────────────────────── */
-    .card {
-      position: relative;
-      z-index: 1;
-      width: 100%;
-      max-width: 520px;
-      background: var(--ivory);
-      border: 1px solid var(--rule);
-      padding: 56px 52px 52px;
-    }
-
-    /* Inner double-line frame */
-    .card::before {
-      content: '';
-      position: absolute;
-      inset: 6px;
-      border: 1px solid var(--rule);
-      pointer-events: none;
-      opacity: 0.5;
-    }
-
-    /* ── HEADER ────────────────────────────────────────────── */
-    .card__eyebrow {
-      font-family: var(--ff-body);
-      font-size: 11px;
-      font-weight: 400;
-      letter-spacing: 0.22em;
-      text-transform: uppercase;
-      color: var(--gold);
-      text-align: center;
-      margin-bottom: 14px;
-    }
-
-    .card__title {
-      font-family: var(--ff-display);
-      font-size: 2rem;
-      font-weight: 400;
-      font-style: italic;
-      color: var(--navy);
-      text-align: center;
-      line-height: 1.25;
-      margin-bottom: 10px;
-    }
-
-    .card__rule {
+    /* ── HEADER / NAV ───────────────────────────────────────── */
+    .site-header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0 32px;
+      height: 60px;
       display: flex;
       align-items: center;
-      gap: 14px;
-      margin: 0 auto 28px;
-      width: 80%;
+      justify-content: space-between;
     }
-    .card__rule::before,
-    .card__rule::after {
-      content: '';
-      flex: 1;
-      height: 1px;
-      background: var(--rule);
+    .site-logo {
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 500;
+      font-size: 15px;
+      color: var(--text);
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
-    .card__rule-diamond {
-      color: var(--gold);
-      font-size: 10px;
-      line-height: 1;
+    .site-logo .logo-mark {
+      width: 28px; height: 28px;
+      background: var(--accent);
+      border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
     }
-
-    .card__subtitle {
-      font-family: var(--ff-body);
-      font-size: 0.95rem;
-      font-weight: 300;
+    .site-logo .logo-mark svg {
+      width: 14px; height: 14px; fill: #fff;
+    }
+    .site-nav {
+      display: flex;
+      gap: 24px;
+      list-style: none;
+    }
+    .site-nav a {
+      font-size: 13px;
       color: var(--muted);
-      text-align: center;
-      margin-bottom: 38px;
-      letter-spacing: 0.02em;
-    }
-
-    /* ── FORM FIELDS ───────────────────────────────────────── */
-    .form-group {
-      position: relative;
-      margin-bottom: 32px;
-    }
-
-    .form-group label {
-      display: block;
-      font-family: var(--ff-body);
-      font-size: 10.5px;
+      text-decoration: none;
       font-weight: 400;
+      transition: color .2s;
+    }
+    .site-nav a:hover { color: var(--text); }
+    .site-nav a.active { color: var(--accent); font-weight: 500; }
+
+    /* ── HERO BANNER ────────────────────────────────────────── */
+    .hero {
+      background: var(--accent);
+      color: #fff;
+      text-align: center;
+      padding: 52px 24px 48px;
+    }
+    .hero__eyebrow {
+      font-size: 11px;
       letter-spacing: 0.18em;
       text-transform: uppercase;
-      color: var(--gold);
-      margin-bottom: 8px;
+      opacity: 0.7;
+      margin-bottom: 12px;
     }
-
-    .form-group input {
-      width: 100%;
-      background: transparent;
-      border: none;
-      border-bottom: 1px solid var(--rule);
-      border-radius: 0;
-      padding: 6px 0 10px;
-      font-family: var(--ff-body);
-      font-size: 1.05rem;
-      font-weight: 300;
-      color: var(--charcoal);
-      outline: none;
-      transition: border-color 0.3s ease;
-      -webkit-appearance: none;
-    }
-
-    .form-group input::placeholder {
-      color: #c2bbb0;
-      font-style: italic;
-      font-size: 0.95rem;
-    }
-
-    .form-group input:focus {
-      border-bottom-color: var(--gold);
-    }
-
-    /* Animated underline on focus */
-    .form-group::after {
-      content: '';
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      width: 0;
-      height: 1px;
-      background: var(--gold);
-      transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-    .form-group:focus-within::after {
-      width: 100%;
-    }
-
-    /* ── SUBMIT BUTTON ─────────────────────────────────────── */
-    .btn-submit {
-      display: block;
-      width: 100%;
-      margin-top: 40px;
-      padding: 14px 0;
-      background: transparent;
-      border: 1px solid var(--charcoal);
-      font-family: var(--ff-body);
-      font-size: 11px;
+    .hero__title {
+      font-family: 'Source Serif 4', Georgia, serif;
+      font-size: clamp(2rem, 4vw, 2.8rem);
       font-weight: 400;
-      letter-spacing: 0.28em;
+      line-height: 1.2;
+      margin-bottom: 14px;
+    }
+    .hero__sub {
+      font-size: 15px;
+      opacity: 0.8;
+      max-width: 480px;
+      margin: 0 auto;
+      line-height: 1.65;
+    }
+
+    /* ── BREADCRUMB ─────────────────────────────────────────── */
+    .breadcrumb {
+      padding: 14px 32px;
+      font-size: 12px;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+    }
+    .breadcrumb a { color: var(--muted); text-decoration: none; }
+    .breadcrumb a:hover { color: var(--accent); }
+    .breadcrumb .sep { opacity: 0.4; }
+
+    /* ── MAIN LAYOUT ────────────────────────────────────────── */
+    .main {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 420px 1fr;
+      gap: 0;
+      padding: 48px 24px 80px;
+      max-width: 1100px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    .sidebar-left {
+      padding-right: 40px;
+    }
+    .sidebar-left h3 {
+      font-family: 'Source Serif 4', serif;
+      font-size: 1rem;
+      font-weight: 400;
+      margin-bottom: 16px;
+      color: var(--text);
+    }
+    .sidebar-left p {
+      font-size: 14px;
+      color: var(--muted);
+      line-height: 1.7;
+      margin-bottom: 20px;
+    }
+    .info-block {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 16px;
+    }
+    .info-block__label {
+      font-size: 10px;
+      letter-spacing: 0.14em;
       text-transform: uppercase;
-      color: var(--charcoal);
-      cursor: pointer;
-      transition: background 0.35s ease, color 0.35s ease, border-color 0.35s ease, letter-spacing 0.35s ease;
-      position: relative;
+      color: var(--accent);
+      margin-bottom: 6px;
+      font-weight: 500;
+    }
+    .info-block__val {
+      font-size: 14px;
+      color: var(--text);
+      font-family: var(--mono);
+    }
+
+    .sidebar-right {
+      padding-left: 40px;
+    }
+    .sidebar-right h3 {
+      font-family: 'Source Serif 4', serif;
+      font-size: 1rem;
+      font-weight: 400;
+      margin-bottom: 16px;
+      color: var(--text);
+    }
+    .step-list {
+      list-style: none;
+      counter-reset: steps;
+    }
+    .step-list li {
+      counter-increment: steps;
+      display: flex;
+      gap: 12px;
+      margin-bottom: 18px;
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+    .step-list li::before {
+      content: counter(steps);
+      min-width: 22px; height: 22px;
+      background: var(--accent-pale);
+      color: var(--accent-dark);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px;
+      font-weight: 600;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+    .step-list li strong { color: var(--text); }
+
+    /* ── FORM CARD ──────────────────────────────────────────── */
+    .form-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
       overflow: hidden;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04);
+    }
+    .form-card__header {
+      background: var(--accent-dark);
+      padding: 22px 28px;
+      color: #fff;
+    }
+    .form-card__header h2 {
+      font-family: 'Source Serif 4', serif;
+      font-size: 1.2rem;
+      font-weight: 400;
+      margin-bottom: 4px;
+    }
+    .form-card__header p {
+      font-size: 13px;
+      opacity: 0.65;
+    }
+    .form-card__body {
+      padding: 28px;
     }
 
-    .btn-submit::before {
+    /* ── FORM FIELDS ────────────────────────────────────────── */
+    .field-group {
+      margin-bottom: 20px;
+    }
+    .field-group label {
+      display: block;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--muted);
+      margin-bottom: 6px;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    .field-group input,
+    .field-group textarea {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      color: var(--text);
+      background: #fafafa;
+      outline: none;
+      transition: border-color .2s, box-shadow .2s, background .2s;
+      resize: none;
+    }
+    .field-group input:focus,
+    .field-group textarea:focus {
+      border-color: var(--accent);
+      background: #fff;
+      box-shadow: 0 0 0 3px rgba(45,106,79,0.1);
+    }
+    .field-group input.error,
+    .field-group textarea.error {
+      border-color: var(--error);
+      box-shadow: 0 0 0 3px rgba(192,57,43,0.1);
+    }
+    .field-error {
+      font-size: 12px;
+      color: var(--error);
+      margin-top: 4px;
+      display: none;
+    }
+
+    /* ── SUBMIT BUTTON ──────────────────────────────────────── */
+    .btn-primary {
+      width: 100%;
+      padding: 12px;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 7px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: background .2s, transform .1s;
+      margin-top: 24px;
+      letter-spacing: 0.02em;
+    }
+    .btn-primary:hover { background: var(--accent-dark); }
+    .btn-primary:active { transform: translateY(1px); }
+    .btn-primary:disabled { opacity: 0.55; cursor: not-allowed; }
+    .btn-primary .spinner {
+      width: 16px; height: 16px;
+      border: 2px solid rgba(255,255,255,0.35);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+      display: none;
+    }
+    .btn-primary.loading .spinner { display: block; }
+    .btn-primary.loading .btn-text::after {
       content: '';
-      position: absolute;
-      inset: 0;
-      background: var(--navy);
-      transform: translateY(100%);
-      transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+      animation: dots 1.4s steps(3,end) infinite;
     }
-
-    .btn-submit span {
-      position: relative;
-      z-index: 1;
-    }
-
-    .btn-submit:hover::before {
-      transform: translateY(0);
-    }
-
-    .btn-submit:hover {
-      color: var(--ivory);
-      border-color: var(--navy);
-      letter-spacing: 0.32em;
-    }
-
-    .btn-submit:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-      pointer-events: none;
-    }
-
-    /* Loading dots on submit */
-    .btn-submit.loading span::after {
-      content: '';
-      animation: dots 1.2s steps(3, end) infinite;
-    }
+    @keyframes spin { to { transform: rotate(360deg); } }
     @keyframes dots {
       0%   { content: ''; }
       33%  { content: '.'; }
@@ -285,168 +360,179 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
       100% { content: '...'; }
     }
 
-    /* ── SUCCESS STATE ─────────────────────────────────────── */
-    #success-message {
+    /* ── SUCCESS MESSAGE ────────────────────────────────────── */
+    #success-box {
       display: none;
+      padding: 28px;
       text-align: center;
-      padding: 12px 0;
     }
-
-    .success-icon {
-      width: 52px;
-      height: 52px;
-      margin: 0 auto 24px;
-      border: 1px solid var(--gold);
+    .success-check {
+      width: 56px; height: 56px;
+      background: var(--accent-pale);
       border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 18px;
     }
-
-    .success-icon svg {
-      width: 22px;
-      height: 22px;
-      stroke: var(--gold);
-      stroke-width: 1.5;
+    .success-check svg {
+      width: 26px; height: 26px;
+      stroke: var(--accent);
+      stroke-width: 2.5;
       fill: none;
       stroke-linecap: round;
       stroke-linejoin: round;
     }
-
-    /* Checkmark draw animation */
-    .success-icon svg path {
-      stroke-dasharray: 40;
-      stroke-dashoffset: 40;
+    .success-check svg path {
+      stroke-dasharray: 38;
+      stroke-dashoffset: 38;
     }
-    #success-message.visible .success-icon svg path {
-      animation: draw-check 0.6s 0.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    #success-box.shown .success-check svg path {
+      animation: draw 0.5s .1s ease forwards;
     }
-    @keyframes draw-check {
-      to { stroke-dashoffset: 0; }
-    }
-
-    .success-eyebrow {
-      font-family: var(--ff-body);
-      font-size: 10px;
-      letter-spacing: 0.22em;
-      text-transform: uppercase;
-      color: var(--gold);
-      margin-bottom: 12px;
-    }
-
-    .success-heading {
-      font-family: var(--ff-display);
-      font-size: 1.6rem;
+    @keyframes draw { to { stroke-dashoffset: 0; } }
+    #success-box h3 {
+      font-family: 'Source Serif 4', serif;
+      font-size: 1.15rem;
       font-weight: 400;
-      font-style: italic;
-      color: var(--navy);
-      margin-bottom: 14px;
-      line-height: 1.3;
+      margin-bottom: 10px;
+      color: var(--text);
     }
-
-    .success-body {
-      font-family: var(--ff-body);
-      font-size: 1rem;
-      font-weight: 300;
+    #success-box p {
+      font-size: 14px;
       color: var(--muted);
-      line-height: 1.8;
-      max-width: 340px;
-      margin: 0 auto;
+      line-height: 1.7;
     }
 
-    /* ── GTM DEBUG PANEL ───────────────────────────────────── */
-    #debug-panel {
+    /* ── FOOTER ─────────────────────────────────────────────── */
+    .site-footer {
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      padding: 20px 32px;
+      font-size: 12px;
+      color: var(--muted);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .site-footer a { color: var(--accent); text-decoration: none; }
+
+    /* ── GTM DEBUG PANEL ────────────────────────────────────── */
+    #gtm-panel {
       position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      z-index: 100;
-      background: #0d1117;
-      border-top: 1px solid #2a2f3a;
-      font-family: 'Courier New', monospace;
+      bottom: 0; left: 0; right: 0;
+      z-index: 9999;
+      background: var(--panel-bg);
+      border-top: 2px solid var(--accent);
+      font-family: var(--mono);
       font-size: 12px;
       color: #8b949e;
-      max-height: 190px;
-      overflow: hidden;
-      transition: max-height 0.3s ease;
+      max-height: 240px;
+      display: flex;
+      flex-direction: column;
+      transition: max-height .3s ease;
     }
+    #gtm-panel.collapsed { max-height: 38px; }
 
-    #debug-panel.collapsed { max-height: 36px; }
-
-    #debug-toggle {
+    #gtm-panel-bar {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 8px 16px;
+      padding: 8px 14px;
       cursor: pointer;
+      flex-shrink: 0;
       user-select: none;
-      border-bottom: 1px solid #2a2f3a;
+      border-bottom: 1px solid var(--panel-border);
     }
-
-    #debug-toggle .badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      color: #7ee787;
-      font-size: 11px;
-      letter-spacing: 0.08em;
-    }
-
-    #debug-toggle .badge::before {
-      content: '';
-      width: 6px; height: 6px;
-      border-radius: 50%;
-      background: #7ee787;
-      animation: pulse-dot 2s infinite;
-    }
-    @keyframes pulse-dot {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.3; }
-    }
-
-    #debug-toggle .arrow {
-      color: #8b949e;
-      transition: transform 0.25s ease;
-      font-size: 10px;
-    }
-    #debug-panel:not(.collapsed) #debug-toggle .arrow { transform: rotate(180deg); }
-
-    #debug-log {
-      padding: 10px 16px 12px;
-      overflow-y: auto;
-      max-height: 145px;
-    }
-
-    .debug-entry {
+    .gtm-badge {
       display: flex;
-      gap: 12px;
-      margin-bottom: 6px;
-      line-height: 1.5;
-    }
-
-    .debug-entry .ts { color: #3d8bcd; flex-shrink: 0; }
-    .debug-entry .label { color: #f0883e; flex-shrink: 0; }
-    .debug-entry .payload { color: #7ee787; word-break: break-all; }
-    .debug-entry .event { color: #d2a8ff; }
-    .debug-entry .dim { color: #484f58; }
-
-    /* ── FOOTER MONOGRAM ───────────────────────────────────── */
-    .footer-monogram {
-      position: relative;
-      z-index: 1;
-      margin-top: 36px;
-      text-align: center;
-      font-family: var(--ff-display);
+      align-items: center;
+      gap: 8px;
       font-size: 11px;
-      letter-spacing: 0.14em;
-      color: var(--rule);
-      font-style: italic;
     }
+    .gtm-badge-icon {
+      background: var(--accent);
+      color: #fff;
+      font-size: 9px;
+      font-weight: 700;
+      padding: 2px 5px;
+      border-radius: 3px;
+      letter-spacing: 0.05em;
+      font-family: 'DM Sans', sans-serif;
+    }
+    .gtm-badge-label { color: #cdd3de; }
+    .gtm-event-count {
+      background: #2d6a4f;
+      color: #d8f3dc;
+      font-size: 10px;
+      padding: 1px 7px;
+      border-radius: 10px;
+      font-family: 'DM Sans', sans-serif;
+    }
+    .gtm-panel-toggle {
+      color: #6e7681;
+      font-size: 10px;
+      transition: transform .25s;
+    }
+    #gtm-panel:not(.collapsed) .gtm-panel-toggle { transform: rotate(180deg); }
 
-    /* ── RESPONSIVE ────────────────────────────────────────── */
-    @media (max-width: 560px) {
-      .card { padding: 40px 28px 36px; }
-      .corner { width: 50px; height: 50px; }
+    #gtm-log {
+      overflow-y: auto;
+      flex: 1;
+      padding: 6px 0;
+    }
+    .gtm-row {
+      display: grid;
+      grid-template-columns: 88px 130px 1fr;
+      gap: 0;
+      padding: 5px 14px;
+      border-bottom: 1px solid rgba(255,255,255,0.03);
+      align-items: start;
+      cursor: pointer;
+      transition: background .15s;
+    }
+    .gtm-row:hover { background: rgba(255,255,255,0.03); }
+    .gtm-row.highlight { background: rgba(45,106,79,0.12); }
+    .gtm-ts { color: #3d8bcd; font-size: 11px; padding-top: 1px; }
+    .gtm-event { color: #f0883e; }
+    .gtm-event.is-ajax { color: #d2a8ff; }
+    .gtm-payload { color: #7ee787; word-break: break-all; line-height: 1.5; }
+    .gtm-payload .key { color: #79c0ff; }
+    .gtm-placeholder { padding: 10px 14px; color: #484f58; font-style: italic; }
+
+    /* ── VARIABLE INSPECTOR ─────────────────────────────────── */
+    #var-inspector {
+      display: none;
+      background: #161b22;
+      border-top: 1px solid var(--panel-border);
+      padding: 10px 14px;
+      flex-shrink: 0;
+    }
+    #var-inspector.open { display: block; }
+    .var-title {
+      font-size: 10px;
+      color: #8b949e;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+      font-family: 'DM Sans', sans-serif;
+    }
+    .var-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px,1fr));
+      gap: 6px;
+    }
+    .var-row {
+      display: flex;
+      gap: 8px;
+      font-size: 11px;
+    }
+    .var-name { color: #79c0ff; flex-shrink: 0; }
+    .var-val { color: #a5d6ff; word-break: break-all; }
+
+    /* ── RESPONSIVE ─────────────────────────────────────────── */
+    @media (max-width: 900px) {
+      .main { grid-template-columns: 1fr; padding: 32px 16px 120px; }
+      .sidebar-left, .sidebar-right { padding: 0 0 24px; }
+      .site-nav { display: none; }
     }
   </style>
 </head>
@@ -456,310 +542,488 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-PCJNKKXQ"
 height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 <!-- End Google Tag Manager (noscript) -->
+  
+<!-- ── HEADER ───────────────────────────────────────────────── -->
+<header class="site-header">
+  <a href="#" class="site-logo">
+    <span class="logo-mark">
+      <svg viewBox="0 0 16 16"><path d="M8 1l2 5h5l-4 3 1.5 5L8 11l-4.5 3L5 9 1 6h5z"/></svg>
+    </span>
+    Analytics Mania
+  </a>
+  <nav>
+    <ul class="site-nav">
+      <li><a href="#">Courses</a></li>
+      <li><a href="#">Blog</a></li>
+      <li><a href="#">Resources</a></li>
+      <li><a href="#" class="active">Contact</a></li>
+    </ul>
+  </nav>
+</header>
 
-<!-- Corner ornaments -->
-<div class="corner corner--tl"></div>
-<div class="corner corner--tr"></div>
-<div class="corner corner--bl"></div>
-<div class="corner corner--br"></div>
+<!-- ── HERO ─────────────────────────────────────────────────── -->
+<div class="hero">
+  <p class="hero__eyebrow">GTM AJAX Demo</p>
+  <h1 class="hero__title">Contact Us</h1>
+  <p class="hero__sub">This form uses AJAX — the page won't reload on submit. Open the debug panel below to watch the <code>ajaxComplete</code> event fire in real time.</p>
+</div>
 
-<div class="page-wrapper">
+<!-- ── BREADCRUMB ────────────────────────────────────────────── -->
+<div class="breadcrumb">
+  <a href="#">Home</a>
+  <span class="sep">›</span>
+  <a href="#">Contact</a>
+</div>
 
-  <div class="card">
+<!-- ── MAIN CONTENT ─────────────────────────────────────────── -->
+<main class="main">
 
-    <!-- ── FORM VIEW ──────────────────────────────────── -->
-    <div id="form-container">
-      <p class="card__eyebrow">Correspondence</p>
-      <h1 class="card__title">Get in Touch</h1>
-      <div class="card__rule"><span class="card__rule-diamond">◆</span></div>
-      <p class="card__subtitle">We endeavour to respond within one business day.</p>
+  <!-- Left sidebar: info -->
+  <aside class="sidebar-left">
+    <h3>How this AJAX form works</h3>
+    <p>When you hit Submit, the form sends a POST request to <code>/api/submit</code> via jQuery's <code>$.ajax()</code> — without reloading the page.</p>
+    <p>The Bounteous jQuery AJAX listener intercepts the <code>ajaxComplete</code> event and pushes all request/response metadata into the GTM <code>dataLayer</code>.</p>
 
-      <form id="contact-form" novalidate>
+    <div class="info-block">
+      <div class="info-block__label">GTM Custom Event</div>
+      <div class="info-block__val">ajaxComplete</div>
+    </div>
+    <div class="info-block">
+      <div class="info-block__label">Data Layer Variable path</div>
+      <div class="info-block__val">attributes.response<br>.data.message</div>
+    </div>
+    <div class="info-block">
+      <div class="info-block__label">Trigger condition</div>
+      <div class="info-block__val">dlv contains<br>"Thanks for contacting us!"</div>
+    </div>
+    <div class="info-block">
+      <div class="info-block__label">GA4 Event Name</div>
+      <div class="info-block__val">generate_lead</div>
+    </div>
+  </aside>
 
-        <div class="form-group">
-          <label for="name">Full Name</label>
-          <input
-            type="text"
-            id="name"
-            name="name"
-            placeholder="Your name, please"
-            autocomplete="name"
-            required
-          />
-        </div>
-
-        <div class="form-group">
-          <label for="email">Electronic Post</label>
-          <input
-            type="email"
-            id="email"
-            name="email"
-            placeholder="your@address.com"
-            autocomplete="email"
-            required
-          />
-        </div>
-
-        <button type="submit" class="btn-submit" id="submit-btn">
-          <span>Send Correspondence</span>
-        </button>
-
-      </form>
-    </div><!-- /#form-container -->
-
-    <!-- ── SUCCESS VIEW ───────────────────────────────── -->
-    <div id="success-message">
-      <div class="success-icon">
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M4.5 12.75l6 6 9-13.5"/>
-        </svg>
+  <!-- CENTER: the actual form -->
+  <section>
+    <div class="form-card">
+      <div class="form-card__header">
+        <h2>Send a Message</h2>
+        <p>We typically respond within one business day.</p>
       </div>
-      <p class="success-eyebrow">Message Received</p>
-      <h2 class="success-heading">Most Appreciated</h2>
-      <p class="success-body" id="success-text"></p>
-    </div><!-- /#success-message -->
 
-  </div><!-- /.card -->
+      <!-- FORM VIEW -->
+      <div class="form-card__body" id="form-wrap">
+        <form id="contact-form" novalidate>
 
-  <p class="footer-monogram">Est. MMXXV &nbsp;·&nbsp; Fine Correspondence</p>
+          <div class="field-group">
+            <label for="fname">First Name</label>
+            <input type="text" id="fname" name="firstName" placeholder="e.g. Julius" />
+            <span class="field-error" id="err-fname">Please enter your first name.</span>
+          </div>
 
-</div><!-- /.page-wrapper -->
+          <div class="field-group">
+            <label for="lname">Last Name</label>
+            <input type="text" id="lname" name="lastName" placeholder="e.g. Fedorovicius" />
+            <span class="field-error" id="err-lname">Please enter your last name.</span>
+          </div>
+
+          <div class="field-group">
+            <label for="email">Email Address</label>
+            <input type="email" id="email" name="email" placeholder="you@example.com" />
+            <span class="field-error" id="err-email">Please enter a valid email.</span>
+          </div>
+
+          <div class="field-group">
+            <label for="message">Message</label>
+            <textarea id="message" name="message" rows="4" placeholder="How can we help?"></textarea>
+            <span class="field-error" id="err-message">Please enter a message.</span>
+          </div>
+
+          <button type="submit" class="btn-primary" id="submit-btn">
+            <div class="spinner"></div>
+            <span class="btn-text">Send Message</span>
+          </button>
+
+        </form>
+      </div><!-- /#form-wrap -->
+
+      <!-- SUCCESS VIEW -->
+      <div id="success-box">
+        <div class="success-check">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M4.5 12.75l6 6 9-13.5"/>
+          </svg>
+        </div>
+        <h3>Message Received!</h3>
+        <p id="success-msg-text"></p>
+      </div>
+
+    </div><!-- /.form-card -->
+  </section>
+
+  <!-- Right sidebar: GTM steps -->
+  <aside class="sidebar-right">
+    <h3>GTM Setup Checklist</h3>
+    <ol class="step-list">
+      <li><strong>dataLayer init</strong> — <code>window.dataLayer = window.dataLayer || []</code> at the top of &lt;head&gt;.</li>
+      <li><strong>jQuery</strong> on the page — the AJAX listener requires it.</li>
+      <li><strong>Custom HTML tag</strong> — paste the Bounteous AJAX listener, fire on All Pages.</li>
+      <li><strong>Data Layer Variable</strong> — name: <code>attributes.response.data.message</code></li>
+      <li><strong>Custom Event trigger</strong> — event name <code>ajaxComplete</code>, condition: DLV contains "Thanks for contacting us!"</li>
+      <li><strong>GA4 Event tag</strong> — event name <code>generate_lead</code>, attach the trigger above.</li>
+      <li><strong>Preview &amp; test</strong> — submit this form, verify in GTM Debug &amp; GA4 DebugView.</li>
+    </ol>
+  </aside>
+
+</main>
+
+<!-- ── FOOTER ────────────────────────────────────────────────── -->
+<footer class="site-footer">
+  <span>Based on <a href="https://www.analyticsmania.com/google-tag-manager-ajax-form-tracking/" target="_blank">Analytics Mania AJAX Form Tracking</a> tutorial</span>
+  <span>Demo — no real backend required</span>
+</footer>
 
 
 <!-- ══════════════════════════════════════════════════════════════
-     GTM DEBUG PANEL — visualises every dataLayer.push() in real time
+     GTM DEBUG PANEL  —  mirrors the GTM Preview & Debug console
 ══════════════════════════════════════════════════════════════ -->
-<div id="debug-panel" class="collapsed">
-  <div id="debug-toggle">
-    <span class="badge">GTM dataLayer Monitor</span>
-    <span class="arrow">▲</span>
-  </div>
-  <div id="debug-log">
-    <div class="debug-entry dim">
-      <span class="ts">&mdash;</span>
-      <span>Waiting for dataLayer events&hellip;</span>
+<div id="gtm-panel" class="collapsed">
+  <div id="gtm-panel-bar">
+    <div class="gtm-badge">
+      <span class="gtm-badge-icon">GTM</span>
+      <span class="gtm-badge-label">dataLayer Monitor</span>
+      <span class="gtm-event-count" id="event-count">0 events</span>
     </div>
+    <span class="gtm-panel-toggle">▲</span>
+  </div>
+
+  <div id="gtm-log">
+    <div class="gtm-placeholder" id="log-placeholder">Waiting for events — submit the form to see dataLayer pushes...</div>
+  </div>
+
+  <div id="var-inspector">
+    <div class="var-title">GTM Variable Preview &nbsp;(click an event row to inspect)</div>
+    <div class="var-grid" id="var-grid"></div>
   </div>
 </div>
 
 
 <!-- ══════════════════════════════════════════════════════════════
-     APPLICATION SCRIPT
+     APPLICATION JAVASCRIPT
 ══════════════════════════════════════════════════════════════ -->
 <script>
-$(function () {
+/* ──────────────────────────────────────────────────────────────
+   A. dataLayer proxy — intercept every push for the debug panel
+────────────────────────────────────────────────────────────── */
+(function () {
+  var origPush = Array.prototype.push;
+  var eventCount = 0;
 
-  /* ─────────────────────────────────────────────────────────────
-     1.  DEBUG PANEL WIRING
-         Wraps dataLayer.push so every push appears in the console.
-  ───────────────────────────────────────────────────────────── */
-  (function monkeyPatchDataLayer() {
-    var originalPush = Array.prototype.push;
-
-    // Intercept pushes on THE dataLayer array instance
-    Object.defineProperty(window, 'dataLayer', {
-      configurable: true,
-      get: function () { return window._dlInternal; },
-      set: function (arr) {
-        window._dlInternal = arr;
-        window._dlInternal.push = function () {
-          var result = originalPush.apply(this, arguments);
-          for (var i = 0; i < arguments.length; i++) {
-            logToDebugPanel(arguments[i]);
-          }
-          return result;
-        };
+  function patchArray(arr) {
+    arr.push = function () {
+      var result = origPush.apply(this, arguments);
+      for (var i = 0; i < arguments.length; i++) {
+        onDataLayerPush(arguments[i]);
       }
-    });
-
-    // Re-assign to trigger the setter on the already-existing array
-    window.dataLayer = window.dataLayer || [];
-  })();
-
-  function logToDebugPanel(payload) {
-    var now      = new Date();
-    var ts       = now.toTimeString().slice(0, 8) + '.' +
-                   String(now.getMilliseconds()).padStart(3, '0');
-    var eventStr = payload.event ? payload.event : '(no event)';
-    var jsonStr  = JSON.stringify(payload, null, 0);
-
-    var $entry = $('<div class="debug-entry">')
-      .append($('<span class="ts">').text(ts))
-      .append($('<span class="label">').text('event:'))
-      .append($('<span class="event">').text(eventStr + ' '))
-      .append($('<span class="payload">').text(jsonStr));
-
-    var $log = $('#debug-log');
-    // Remove the placeholder dim entry if present
-    $log.find('.dim').remove();
-    $log.append($entry);
-    $log.scrollTop($log[0].scrollHeight);
-
-    // Auto-expand panel when a new event fires
-    $('#debug-panel').removeClass('collapsed');
+      return result;
+    };
   }
 
-  // Toggle panel collapse
-  $('#debug-toggle').on('click', function () {
-    $('#debug-panel').toggleClass('collapsed');
-  });
-
-
-  /* ─────────────────────────────────────────────────────────────
-     2.  MOCK AJAX TRANSPORT
-         Intercepts ANY $.ajax call to '/api/submit' and returns a
-         simulated 200 + the exact JSON payload required by the spec.
-         No live server needed.
-  ───────────────────────────────────────────────────────────── */
-  $.ajaxTransport('+*', function (options) {
-    if (options.url !== '/api/submit') return; // Only intercept our endpoint
-
-    return {
-      send: function (headers, completeCallback) {
-        // Simulate network latency (800 ms)
-        window._mockXhrTimer = setTimeout(function () {
-          var mockResponse = {
-            status:  'success',
-            data: {
-              message: 'Thanks for contacting us! We will be in touch with you shortly'
-            }
-          };
-          completeCallback(
-            200,                           // HTTP status code
-            'OK',                          // status text
-            { json: mockResponse },        // responses object (jQuery reads .json)
-            'Content-Type: application/json'
-          );
-        }, 800);
-      },
-      abort: function () {
-        clearTimeout(window._mockXhrTimer);
-      }
-    };
-  });
-
-
-  /* ─────────────────────────────────────────────────────────────
-     3.  FORM SUBMISSION HANDLER
-  ───────────────────────────────────────────────────────────── */
-  $('#contact-form').on('submit', function (e) {
-    e.preventDefault(); // Prevent default page reload
-
-    var name  = $.trim($('#name').val());
-    var email = $.trim($('#email').val());
-
-    // Minimal client-side guard
-    if (!name || !email) {
-      // Shake the empty fields
-      ['#name', '#email'].forEach(function (sel) {
-        if (!$.trim($(sel).val())) {
-          $(sel).css({ animation: 'none' }).offset(); // reflow
-          $(sel).css({
-            animation: 'shake 0.4s ease',
-            borderBottomColor: '#c0392b'
-          });
-          setTimeout(function () {
-            $(sel).css({ borderBottomColor: '', animation: '' });
-          }, 1200);
-        }
-      });
-      return;
+  Object.defineProperty(window, 'dataLayer', {
+    configurable: true,
+    get: function () { return window._dl; },
+    set: function (v) {
+      window._dl = v;
+      patchArray(window._dl);
     }
+  });
+  window.dataLayer = window.dataLayer || [];
 
-    // Disable button + show loading state
-    var $btn = $('#submit-btn');
-    $btn.prop('disabled', true).addClass('loading');
-    $btn.find('span').text('Sending');
+  function onDataLayerPush(payload) {
+    eventCount++;
+    $('#event-count').text(eventCount + (eventCount === 1 ? ' event' : ' events'));
+    $('#log-placeholder').remove();
 
-    /* ── PUSH: form_submit_attempt ────────────────────────── */
-    window.dataLayer.push({
-      event:      'form_submit_attempt',
-      form_id:    'contact_form',
-      form_name:  'Contact Form',
-      user_name:  name,
-      user_email: email
+    var now = new Date();
+    var ts  = now.toTimeString().slice(0, 8) + '.' + String(now.getMilliseconds()).padStart(3, '0');
+    var evt = payload.event || '(no event)';
+    var isAjax = evt === 'ajaxComplete';
+
+    // Build a simplified payload string for the row
+    var simplified = buildSimplified(payload);
+
+    var $row = $('<div class="gtm-row" data-payload=\'' + encodeURIComponent(JSON.stringify(payload)) + '\'>')
+      .append($('<span class="gtm-ts">').text(ts))
+      .append($('<span class="gtm-event' + (isAjax ? ' is-ajax' : '') + '">').text(evt))
+      .append($('<span class="gtm-payload">').html(simplified));
+
+    if (isAjax) $row.addClass('highlight');
+
+    var $log = $('#gtm-log');
+    $log.append($row);
+    $log.scrollTop($log[0].scrollHeight);
+
+    // Auto-expand
+    $('#gtm-panel').removeClass('collapsed');
+
+    // Bind click → variable inspector
+    $row.on('click', function () {
+      showVarInspector(payload);
     });
 
-    /* ── ACTUAL AJAX CALL (intercepted by mock transport) ─── */
+    // Auto-show inspector for ajaxComplete
+    if (isAjax) {
+      showVarInspector(payload);
+    }
+  }
+
+  function buildSimplified(payload) {
+    var parts = [];
+    for (var k in payload) {
+      if (!payload.hasOwnProperty(k) || k === 'event') continue;
+      var v = payload[k];
+      if (typeof v === 'object' && v !== null) {
+        parts.push('<span class="key">' + escH(k) + '</span>: {…}');
+      } else {
+        parts.push('<span class="key">' + escH(k) + '</span>: ' + escH(String(v)));
+      }
+      if (parts.length >= 4) { parts.push('…'); break; }
+    }
+    return parts.join(' &nbsp;·&nbsp; ');
+  }
+
+  window._onDataLayerPush = onDataLayerPush;
+})();
+
+function escH(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+/* Variable inspector */
+function showVarInspector(payload) {
+  var $grid = $('#var-grid').empty();
+  var vars = extractGtmVars(payload);
+  if (!vars.length) return;
+  vars.forEach(function (v) {
+    $grid.append(
+      $('<div class="var-row">')
+        .append($('<span class="var-name">').text(v.name + ':'))
+        .append($('<span class="var-val">').text(v.value))
+    );
+  });
+  $('#var-inspector').addClass('open');
+}
+
+function extractGtmVars(p) {
+  var vars = [];
+  if (!p || typeof p !== 'object') return vars;
+
+  function dig(obj, prefix) {
+    for (var k in obj) {
+      if (!obj.hasOwnProperty(k)) continue;
+      var path = prefix ? prefix + '.' + k : k;
+      var val  = obj[k];
+      if (val !== null && typeof val === 'object') {
+        dig(val, path);
+      } else {
+        vars.push({ name: path, value: String(val) });
+      }
+      if (vars.length > 30) return;
+    }
+  }
+  dig(p, '');
+  return vars;
+}
+
+/* Panel toggle */
+$('#gtm-panel-bar').on('click', function () {
+  $('#gtm-panel').toggleClass('collapsed');
+});
+
+
+/* ──────────────────────────────────────────────────────────────
+   B. MOCK AJAX TRANSPORT
+   Intercepts calls to /api/submit and returns the EXACT JSON
+   structure the tutorial uses, so GTM DLV path resolves correctly:
+     attributes.response.data.message
+────────────────────────────────────────────────────────────── */
+$.ajaxTransport('+*', function (options) {
+  if (options.url !== '/api/submit') return;
+  return {
+    send: function (headers, complete) {
+      window._mockTimer = setTimeout(function () {
+        var body = {
+          status: 'success',
+          data: {
+            message: 'Thanks for contacting us! We will be in touch with you shortly'
+          }
+        };
+        complete(200, 'OK', { json: body }, 'Content-Type: application/json');
+      }, 900);
+    },
+    abort: function () { clearTimeout(window._mockTimer); }
+  };
+});
+
+
+/* ──────────────────────────────────────────────────────────────
+   C. BOUNTEOUS / LUNA METRICS AJAX LISTENER
+   Source: https://www.bounteous.com/insights/2015/08/27/ajax-event-listener-google-tag-manager/
+   This is the EXACT listener shown in the Analytics Mania tutorial.
+   It pushes an "ajaxComplete" event with a full "attributes" object.
+────────────────────────────────────────────────────────────── */
+(function () {
+  'use strict';
+  var $;
+  var n = 0;
+  init();
+
+  function init(n) {
+    if (typeof jQuery !== 'undefined') {
+      $ = jQuery;
+      bindToAjax();
+    } else if (n < 20) {
+      n++;
+      setTimeout(init, 500);
+    }
+  }
+
+  function bindToAjax() {
+    $(document).bind('ajaxComplete', function (evt, jqXhr, opts) {
+      var fullUrl = document.createElement('a');
+      fullUrl.href = opts.url;
+
+      var pathname    = fullUrl.pathname[0] === '/' ? fullUrl.pathname : '/' + fullUrl.pathname;
+      var queryString = fullUrl.search[0] === '?' ? fullUrl.search.slice(1) : fullUrl.search;
+      var queryParameters = objMap(queryString, '&', '=', true);
+      var headers     = objMap(jqXhr.getAllResponseHeaders(), '\n', ':');
+
+      dataLayer.push({
+        'event': 'ajaxComplete',
+        'attributes': {
+          'type':            opts.type        || '',
+          'url':             fullUrl.href     || '',
+          'queryParameters': queryParameters,
+          'pathname':        pathname         || '',
+          'hostname':        fullUrl.hostname || '',
+          'protocol':        fullUrl.protocol || '',
+          'fragment':        fullUrl.hash     || '',
+          'statusCode':      jqXhr.status     || '',
+          'statusText':      jqXhr.statusText || '',
+          'headers':         headers,
+          'timestamp':       evt.timeStamp    || '',
+          'contentType':     opts.contentType || '',
+          /* ↓ This is where GTM reads: attributes.response.data.message */
+          'response': (jqXhr.responseJSON || jqXhr.responseXML || jqXhr.responseText || '')
+        }
+      });
+    });
+  }
+
+  function objMap(data, delim, spl, decode) {
+    var obj = {};
+    if (!data || !delim || !spl) return {};
+    var arr = data.split(delim);
+    for (var i = 0; i < arr.length; i++) {
+      var item = decode ? decodeURIComponent(arr[i]) : arr[i];
+      var pair = item.split(spl);
+      var key  = trim_(pair[0]);
+      var val  = trim_(pair[1]);
+      if (key && val) obj[key] = val;
+    }
+    return obj;
+  }
+
+  function trim_(str) {
+    if (str) return str.replace(/^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g, '');
+  }
+
+  /*
+   * v0.1.0  ·  Created by LunaMetrics  ·  @notdanwilkerson
+   * Licensed under CC 4.0 Attribution Public License
+   */
+})();
+
+
+/* ──────────────────────────────────────────────────────────────
+   D. FORM SUBMISSION HANDLER
+────────────────────────────────────────────────────────────── */
+$(function () {
+
+  $('#contact-form').on('submit', function (e) {
+    e.preventDefault();
+
+    // ── Validation ──────────────────────────────────────────
+    var fname   = $.trim($('#fname').val());
+    var lname   = $.trim($('#lname').val());
+    var email   = $.trim($('#email').val());
+    var message = $.trim($('#message').val());
+    var emailRx = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    var valid   = true;
+
+    function setErr(id, errId, show) {
+      $('#' + id).toggleClass('error', show);
+      $('#' + errId).css('display', show ? 'block' : 'none');
+      if (show) valid = false;
+    }
+
+    setErr('fname',   'err-fname',   !fname);
+    setErr('lname',   'err-lname',   !lname);
+    setErr('email',   'err-email',   !email || !emailRx.test(email));
+    setErr('message', 'err-message', !message);
+
+    if (!valid) return;
+
+    // ── Loading state ────────────────────────────────────────
+    var $btn = $('#submit-btn');
+    $btn.prop('disabled', true).addClass('loading');
+    $btn.find('.btn-text').text('Sending');
+
+    // ── AJAX POST ────────────────────────────────────────────
     $.ajax({
       url:         '/api/submit',
       type:        'POST',
       contentType: 'application/json',
       dataType:    'json',
-      data:        JSON.stringify({ name: name, email: email })
+      data:        JSON.stringify({ firstName: fname, lastName: lname, email: email, message: message })
     })
-    .done(function (responseJSON, textStatus, jqXHR) {
+    .done(function (responseJSON) {
       /*
-       * responseJSON now EXACTLY matches the spec:
-       * {
+       * responseJSON = {
        *   "status": "success",
        *   "data": {
        *     "message": "Thanks for contacting us! We will be in touch with you shortly"
        *   }
        * }
        *
-       * Your GTM Data Layer Variable path: responseJSON.data.message
+       * The Bounteous listener above will push this as:
+       *   attributes.response  →  the full responseJSON object
+       *
+       * So in GTM the Data Layer Variable name is:
+       *   attributes.response.data.message
        */
-
-      if (responseJSON.status === 'success') {
-
-        /* ── PUSH: form_submit_success ─────────────────────── */
-        window.dataLayer.push({
-          event:           'form_submit_success',
-          form_id:         'contact_form',
-          form_name:       'Contact Form',
-          submission_status: responseJSON.status,                   // "success"
-          confirmation_message: responseJSON.data.message,          // full message string
-          response_data:   responseJSON.data                        // nested object
+      if (responseJSON && responseJSON.status === 'success') {
+        // Swap form for success message
+        $('#form-wrap').fadeOut(300, function () {
+          $('#success-msg-text').text(responseJSON.data.message);
+          $('#success-box').fadeIn(400).addClass('shown');
         });
-
-        /* ── DOM: fade out form, fade in success ───────────── */
-        $('#form-container').fadeOut(400, function () {
-
-          // Populate the success message text from the JSON payload
-          $('#success-text').text(responseJSON.data.message);
-
-          $('#success-message')
-            .fadeIn(500)
-            .addClass('visible'); // triggers CSS checkmark draw animation
-        });
-
-      } else {
-        // Non-success status in JSON body
-        handleError('Unexpected response status: ' + responseJSON.status);
       }
     })
-    .fail(function (jqXHR, textStatus, errorThrown) {
-      handleError(textStatus + ': ' + errorThrown);
+    .fail(function (jqXHR, status, err) {
+      console.error('[Demo] AJAX error:', status, err);
+      dataLayer.push({ event: 'form_submit_error', error: status });
     })
     .always(function () {
       $btn.prop('disabled', false).removeClass('loading');
-      $btn.find('span').text('Send Correspondence');
+      $btn.find('.btn-text').text('Send Message');
     });
   });
 
-
-  /* ─────────────────────────────────────────────────────────────
-     4.  ERROR HANDLER
-  ───────────────────────────────────────────────────────────── */
-  function handleError(msg) {
-    /* ── PUSH: form_submit_error ──────────────────────────── */
-    window.dataLayer.push({
-      event:         'form_submit_error',
-      form_id:       'contact_form',
-      form_name:     'Contact Form',
-      error_message: msg
-    });
-
-    console.error('[Contact Form] Submission error:', msg);
-  }
-
-  /* ─────────────────────────────────────────────────────────────
-     5.  SHAKE KEYFRAME (injected programmatically to keep CSS clean)
-  ───────────────────────────────────────────────────────────── */
-  $('<style>')
-    .text('@keyframes shake { 0%,100%{transform:translateX(0)} 20%,60%{transform:translateX(-5px)} 40%,80%{transform:translateX(5px)} }')
-    .appendTo('head');
+  // Clear error state on input
+  $('input, textarea').on('input', function () {
+    $(this).removeClass('error');
+    $(this).siblings('.field-error').hide();
+  });
 
 });
 </script>
